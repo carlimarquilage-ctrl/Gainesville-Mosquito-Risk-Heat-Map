@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V6 — Gainesville Mosquito Density Estimate — EMERGE Prototype</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>:root{font-family:"IBM Plex Sans",system-ui,sans-serif;color:#17322b;background:#eef3f0}*{box-sizing:border-box}body{margin:0}.app{min-height:100vh}.top{height:74px;padding:12px 22px;background:#fff;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #d8e2dd}.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.mark{font-size:27px}.top h1{font:600 25px Newsreader,serif;margin:0}.sub{color:#60756e;font-size:13px}.report-btn{background:#176b4d;color:#fff;text-decoration:none;padding:10px 15px;border-radius:7px;font-weight:600}.layout{display:grid;grid-template-columns:360px 1fr;height:calc(100vh - 112px)}.panel{background:#fff;overflow:auto;border-right:1px solid #d8e2dd}.block{padding:18px;border-bottom:1px solid #e4ebe7}.demo-flag,.src-badge{font-size:10px;font-weight:700;letter-spacing:.06em}.demo-flag{color:#176b4d}.desc{color:#50665f;font-size:13px;line-height:1.5}.desc.small{font-size:12px}.status-row{margin-top:7px;font-size:12px}.src-badge{display:inline-block;color:#fff;border-radius:10px;padding:2px 7px}.src-live{background:#16803a}.src-fallback{background:#9a6b16}.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}.stat .num{font-size:22px;font-weight:700}.stat .lbl{font-size:10px;color:#657870}.stat.high .num{color:#d7191c}.h{font-size:14px;margin:0 0 11px}.scale-bar{height:14px;border-radius:8px;background:linear-gradient(90deg,#16803a 0%,#55b947 20%,#cddd3a 40%,#ffd43b 60%,#ff7a28 80%,#d7191c 100%)}.scale-labels{display:flex;justify-content:space-between;font-size:11px;color:#60756e;margin-top:4px}.legend-row{display:flex;gap:8px;font-size:12px}.legend-dot{width:11px;height:11px;border-radius:50%;flex:none}.map-wrap{position:relative}#map{height:100%;width:100%;background:#e8eee9}#loading{position:absolute;z-index:1000;top:14px;left:50%;transform:translateX(-50%);background:#fff;padding:9px 13px;border-radius:6px;box-shadow:0 2px 12px #0002}.popup{min-width:210px}.pop-title{font-weight:700;margin-bottom:7px}.pop-tier{display:inline-block;border-radius:12px;padding:3px 8px;font-size:11px;font-weight:700;margin-bottom:5px}.pop-row{font-size:12px;margin-top:5px}.rain-chart{height:62px;display:flex;align-items:flex-end;gap:6px}.rain-bar-col{flex:1;display:flex;align-items:flex-end}.rain-bar{width:100%;background:#3c91b2;border-radius:3px 3px 0 0}.rain-labels{display:flex;justify-content:space-between;font-size:8px;color:#6f817a}.site-item{width:100%;border:0;background:transparent;display:flex;gap:9px;text-align:left;padding:8px 2px;cursor:pointer}.site-item:hover{background:#f2f7f4}.site-dot{width:9px;height:9px;border-radius:50%;margin-top:4px}.site-name{font-weight:600;font-size:12px}.site-meta{font-size:10px;color:#6a7c75}.method-card{font-size:11px;line-height:1.5;color:#52665f}.foot{height:38px;background:#17322b;color:#c9d8d2;padding:11px 20px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:800px){.layout{grid-template-columns:1fr;height:auto}.panel{max-height:none}.map-wrap,#map{height:65vh}.top{height:auto}.sub{display:none}.foot{height:auto;white-space:normal}.stat-row{grid-template-columns:repeat(3,1fr)}}
+</style>
+<style>#mosquito-assistant{position:fixed;right:20px;bottom:48px;z-index:2000;font:14px system-ui,sans-serif;color:#153b30;max-width:calc(100vw - 24px)}
+#mosquito-assistant button{cursor:pointer;font:inherit;border:1px solid #cadcd3;border-radius:8px;padding:9px 12px;background:#fff;color:#153b30}
+#mosquito-assistant button:hover{background:#e9f4ed}
+#mosquito-assistant button:focus-visible,#mosquito-assistant input:focus-visible{outline:3px solid #399769;outline-offset:2px}
+#guide-toggle{background:#175f46!important;color:white!important;box-shadow:0 4px 20px #1234}
+#guide-body{position:absolute;right:0;bottom:52px;width:380px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 130px);background:#fff;border:1px solid #cadcd3;border-radius:16px;box-shadow:0 10px 50px #1435;overflow:hidden;display:flex;flex-direction:column}
+#guide-body[hidden],#mosquito-assistant [hidden]{display:none!important}
+#guide-body header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#edf7f0}
+#guide-body header strong{font-size:18px}
+#guide-body .guide-mode{margin:8px 14px;color:#556b61;font-size:12px}
+#guide-topics{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 8px}
+#guide-topics button{font-size:12px;padding:7px}
+#guide-content{overflow:auto;min-height:110px;max-height:42vh;padding:8px 14px}
+#guide-context{font-size:11px;color:#536d60;margin:0 0 10px}
+.guide-message{padding:10px 12px;margin:0 0 10px;border-radius:12px;background:#eef5f0;overflow-wrap:anywhere}
+.guide-message.user{background:#e3eff9;margin-left:25px}
+.guide-message p{margin:5px 0;line-height:1.5;white-space:pre-wrap}
+.guide-message strong{font-size:11px}
+.guide-message a{font-size:12px;color:#186645}
+#guide-checks h3{font-size:14px}
+#guide-checks label{display:flex;gap:8px;align-items:start;padding:8px 0;line-height:1.4}
+#guide-photo{margin:12px 0;padding:10px;border:1px dashed #83a994;border-radius:8px}
+#guide-photo p{font-size:11px;color:#536d60}
+#yard-photo{max-width:100%;margin-top:8px}
+#yard-preview{max-width:100%;max-height:180px;object-fit:contain}
+#guide-form{padding:10px 14px;border-top:1px solid #dce8e0}
+#guide-form label{display:block;font-size:12px;margin-bottom:5px}
+#guide-form div{display:flex;gap:6px}
+#guide-question{min-width:0;flex:1;padding:9px;border:1px solid #bed0c4;border-radius:8px;font:inherit}
+#guide-clear{font-size:11px!important;border:0!important;padding:5px 14px 10px!important}
+@media(max-width:500px){#mosquito-assistant{right:12px;bottom:14px}#guide-body{max-height:calc(100dvh - 90px)}}
+</style></head>
+<body>
+
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <span class="mark">🦟</span>
+      <h1>Gainesville Mosquito Density Estimate</h1>
+      <span class="sub">EMERGE / GLOBE Observer prototype — live rainfall, ponds &amp; lakes, real reports</span>
+    </div>
+    <a class="report-btn" href="https://observer.globe.gov/" target="_blank" rel="noopener">Report a sighting</a>
+  </header>
+
+  <div class="layout">
+
+    <aside class="panel">
+      <div class="block">
+        <span class="demo-flag">V6 • DENSITY MAP + LOCAL GUIDE</span>
+        <p class="desc">
+          Estimated relative mosquito density combines seven completed days of rainfall,
+          temperature suitability, proximity to mapped water, and recent larvae reports.
+          Green means lower density potential; red means higher potential.
+        </p>
+        <div class="status-list">
+          <div class="status-row" id="status-globe">Loading…</div>
+          <div class="status-row" id="status-rain">Loading…</div>
+          <div class="status-row" id="status-water">Loading…</div>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="stat-row">
+          <div class="stat">
+            <div class="num" id="stat-sites">—</div>
+            <div class="lbl">Sites tracked</div>
+          </div>
+          <div class="stat high">
+            <div class="num" id="stat-hot">—</div>
+            <div class="lbl">High-index grid points</div>
+          </div>
+          <div class="stat">
+            <div class="num" id="stat-rain">—</div>
+            <div class="lbl">Center rain, 7 days</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h2 class="h">Relative density scale</h2>
+        <div class="scale-bar"></div>
+        <div class="scale-labels">
+          <span>Low</span>
+          <span>Medium</span>
+          <span>High</span>
+        </div>
+        <p class="desc small">
+          The continuous 0–100 index combines lag-weighted rain, repeated wet days,
+          water proximity and habitat type. Temperature modulates habitat productivity.
+          Positive larvae reports fade with age; eliminated sites add no evidence.
+          This is an uncalibrated relative index, not a count or disease probability.
+        </p>
+        <div class="legend-row">
+          <span class="legend-dot" style="background:#DDEEF3;border:1.5px solid #2D7D9A"></span>
+          <div class="legend-text"><span class="t">Blue dots</span> <span class="d">— ponds and lakes pulled from OpenStreetMap</span></div>
+        </div>
+      </div>
+
+      <div class="block">
+        <h2 class="h">Rainfall, past 7 days (county center)</h2>
+        <div class="rain-chart" id="rain-chart"></div>
+        <div class="rain-labels" id="rain-labels"></div>
+      </div>
+
+      <div class="block">
+        <h2 class="h">Reported sites</h2>
+        <div class="site-list" id="site-list"></div>
+      </div>
+
+      <div class="block">
+        <h2 class="h">Method &amp; sources</h2>
+        <div class="method-card">
+          Experimental model, with heuristic parameters that require local trap-count
+          calibration. Weather comes from a single county-center Open-Meteo location;
+          it does not resolve neighborhood rainfall. Water distances use OSM feature
+          centers, not shorelines. Reports are opportunistic, so no report does not mean
+          no mosquitoes. Humidity, shade, drainage and control treatments are not measured.
+          FALLBACK badges identify sample inputs.
+          <a href="https://www.cdc.gov/mosquitoes/about/life-cycle-of-aedes-mosquitoes.html"
+          target="_blank" rel="noopener">CDC mosquito life-cycle background</a>.
+        </div>
+      </div>
+    </aside>
+
+    <section class="map-wrap">
+      <div id="map"></div>
+      <div id="loading">Starting map…</div>
+    </section>
+
+  </div>
+
+  <footer class="foot">
+    Prototype for CityCamp Gainesville Hack Day, NASA and Environmental Data Track.
+    Live sources: NASA GLOBE Observer Mosquito Habitat Mapper (via UF GeoPlan/GeoDI),
+    Open-Meteo rainfall, OpenStreetMap ponds &amp; lakes. Method: EMERGE Textbook 1
+    (Data Analysis) and the geoemerge Python package. Any source unavailable at load
+    time falls back to a labeled sample set.
+  </footer>
+
+</div>
+
+<script>/* Local, rule-based educational assistant. No API calls, photo analysis or diagnosis. */
+(() => {
+  const sources = {
+    prevention: ['CDC: mosquito prevention', 'https://www.cdc.gov/mosquitoes/prevention/index.html'],
+    symptoms: ['CDC: dengue symptoms', 'https://www.cdc.gov/dengue/signs-symptoms/index.html'],
+    alerts: ['Florida DOH — Alachua County', 'https://alachua.floridahealth.gov/']
+  };
+  const topics = {
+    home: ['Home', 'What are local conditions?'],
+    protect: ['Protect me', 'How can I protect myself?'],
+    yard: ['Check my yard', 'How do I check my yard?'],
+    symptoms: ['Symptoms', 'What symptoms need medical attention?'],
+    alerts: ['Alerts & sources', 'Are there official local alerts?']
+  };
+  let context = null;
+  let photoURL = null;
+  const checks = {protect: new Set(), yard: new Set()};
+  const lists = {
+    protect: ['Use EPA-registered repellent as its label directs.', 'Wear loose long sleeves and pants.', 'Check window and door screens for holes.'],
+    yard: ['Empty and scrub buckets and plant saucers weekly.', 'Turn over toys and containers that collect rain.', 'Cover stored water and check birdbaths.', 'Arrange safe help for blocked gutters; do not climb to inspect.']
+  };
+  function reply(question) {
+    const q = question.toLowerCase();
+    if (/symptom|fever|vomit|pain|bleed|rash|sick|breath|faint|dizzy|emergency|diagnos|dengue|illness|infect/.test(q)) {
+      return {text: 'I cannot diagnose illness or calculate your chance of infection. Dengue can cause fever, aches, nausea or rash. Contact a healthcare professional for symptoms, especially after travel or mosquito exposure. Seek urgent medical care for abdominal tenderness, repeated vomiting, unusual bleeding or marked exhaustion/restlessness—even after fever improves. For trouble breathing, fainting or a life-threatening emergency, call 911. Do not wait for a chatbot assessment.', source:'symptoms', topic:'symptoms'};
+    }
+    if (/alert|outbreak|case|advisory|official|source/.test(q)) return {
+      text:'Current official alert status: NOT VERIFIED. This prototype has no live public-health alert feed. A red map area is an experimental mosquito-density estimate, not evidence of dengue cases or a health advisory. Check Alachua County’s health department for current notices.', source:'alerts', topic:'alerts'};
+    if (/yard|standing|water|photo|picture|bucket|gutter|plant|pond/.test(q)) return {
+      text:'Look for containers holding water and use the yard checklist below. Check weekly and after rain. A pond on the map does not prove mosquito breeding. You can attach a yard photo as a visual reminder, but this assistant does not inspect images or identify larvae.', source:'prevention', topic:'yard'};
+    if (/protect|prevent|repellent|clothes|clothing|screen|bite|outside/.test(q)) return {
+      text:'Use an EPA-registered repellent according to its label, cover arms and legs with loose clothing, and keep screens in good repair. Mosquitoes can bite during the day and at night. These precautions still matter when the map shows a low index.', source:'prevention', topic:'protect'};
+    if (/local|risk|density|weather|rain|temperature|map|home|today|condition/.test(q)) {
+      if (!context) return {text:'The map has not supplied location data yet. I cannot report current local conditions. You can still use the protection and yard checklists while the map loads. Official disease-alert status is not verified.', topic:'home'};
+      const labels = Object.entries(context.sources).map(([name,live])=>name+': '+(live?'live response':'SAMPLE')).join('; ');
+      return {text:'Selected map point: '+context.lat.toFixed(4)+', '+context.lng.toFixed(4)+
+        '. Density potential: '+context.score.toFixed(1)+'/100 (experimental index, not infection probability). Seven-day rain: '+
+        context.rain.toFixed(2)+' inches. Inputs: '+labels+
+        '. Weather represents the county center. Refreshed '+new Date(context.updated).toLocaleTimeString()+
+        '. Today: use bite protection and check water-holding containers. No official health-alert feed is connected.', topic:'home', source:'prevention'};
+    }
+    return {text:'I am a local guide with prepared answers, not a generative AI model. Ask about local map conditions, mosquito protection, yard checks, symptoms or official alerts. I cannot answer other questions reliably.'};
+  }
+  const panel = document.createElement('aside');
+  panel.id = 'mosquito-assistant';
+  panel.setAttribute('aria-label', 'Mosquito guide');
+  panel.innerHTML = '<button id="guide-toggle" aria-expanded="false" aria-controls="guide-body">Ask mosquito guide</button>'+
+    '<div id="guide-body" hidden><header><strong>Mosquito guide</strong><button id="guide-close" aria-label="Close guide">×</button></header>'+
+    '<p class="guide-mode">Local guided answers · No Gemini connection</p>'+
+    '<nav id="guide-topics" aria-label="Guide topics"></nav>'+
+    '<div id="guide-content"><p id="guide-context">Map context unavailable</p>'+
+    '<div id="guide-log" role="log" aria-live="polite" aria-label="Conversation"></div>'+
+    '<section id="guide-checks" aria-label="Checklist"></section>'+
+    '<section id="guide-photo" hidden><label for="yard-photo">Yard photo (local preview only)</label>'+
+    '<input id="yard-photo" type="file" accept="image/jpeg,image/png,image/webp">'+
+    '<p>No image analysis. Photos stay in this tab and are not uploaded.</p>'+
+    '<img id="yard-preview" alt="Your yard photo for manual review" hidden>'+
+    '<button id="remove-photo" type="button" hidden>Remove photo</button></section></div>'+
+    '<form id="guide-form"><label for="guide-question">Ask a question</label>'+
+    '<div><input id="guide-question" maxlength="600" autocomplete="off" placeholder="How can I reduce mosquitoes?"><button>Send</button></div></form>'+
+    '<button id="guide-clear">Clear conversation and checklist</button></div>';
+  document.body.appendChild(panel);
+  const $ = id => document.getElementById(id);
+  function message(text, who, source) {
+    const item = document.createElement('div');
+    item.className = 'guide-message '+who;
+    const label = document.createElement('strong');
+    label.textContent = who==='user'?'You':'Guide';
+    const p = document.createElement('p'); p.textContent=text;
+    item.append(label,p);
+    if (source) {
+      const link=document.createElement('a');
+      link.textContent=sources[source][0];link.href=sources[source][1];
+      link.target='_blank';link.rel='noopener noreferrer';item.appendChild(link);
+    }
+    $('guide-log').appendChild(item);
+    while ($('guide-log').children.length>30) $('guide-log').firstElementChild.remove();
+    $('guide-content').scrollTop=$('guide-content').scrollHeight;
+  }
+  function showChecklist(topic) {
+    $('guide-checks').replaceChildren();
+    $('guide-photo').hidden=topic!=='yard';
+    if (!lists[topic]) return;
+    const title=document.createElement('h3');title.textContent=topics[topic][0]+' checklist';
+    $('guide-checks').appendChild(title);
+    lists[topic].forEach((text,i)=>{
+      const label=document.createElement('label'), input=document.createElement('input');
+      input.type='checkbox';input.checked=checks[topic].has(i);
+      input.addEventListener('change',()=>input.checked?checks[topic].add(i):checks[topic].delete(i));
+      label.append(input,document.createTextNode(text));$('guide-checks').appendChild(label);
+    });
+  }
+  function ask(q) {
+    if (!q.trim()) return;
+    message(q,'user');const answer=reply(q);
+    message(answer.text,'bot',answer.source);showChecklist(answer.topic);
+  }
+  Object.entries(topics).forEach(([id,[label,q]])=>{
+    const button=document.createElement('button');button.textContent=label;
+    button.addEventListener('click',()=>ask(q));$('guide-topics').appendChild(button);
+  });
+  function open(value) {
+    $('guide-body').hidden=!value;$('guide-toggle').setAttribute('aria-expanded',String(value));
+    if(value)$('guide-question').focus();else $('guide-toggle').focus();
+  }
+  $('guide-toggle').addEventListener('click',()=>open($('guide-body').hidden));
+  $('guide-close').addEventListener('click',()=>open(false));
+  panel.addEventListener('keydown',event=>{if(event.key==='Escape')open(false)});
+  $('guide-form').addEventListener('submit',event=>{
+    event.preventDefault();const q=$('guide-question').value;$('guide-question').value='';ask(q);
+  });
+  function removePhoto() {
+    if(photoURL) URL.revokeObjectURL(photoURL);photoURL=null;
+    $('yard-preview').removeAttribute('src');$('yard-preview').hidden=true;
+    $('remove-photo').hidden=true;$('yard-photo').value='';
+  }
+  $('yard-photo').addEventListener('change',()=>{
+    const file=$('yard-photo').files[0];removePhoto();if(!file)return;
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024){
+      message('Choose a JPG, PNG or WebP image under 5 MB.','bot');return;
+    }
+    photoURL=URL.createObjectURL(file);$('yard-preview').src=photoURL;
+    $('yard-preview').hidden=false;$('remove-photo').hidden=false;
+  });
+  $('yard-preview').addEventListener('error',()=>{removePhoto();message('This image could not be displayed. Try another JPG or PNG.','bot')});
+  $('remove-photo').addEventListener('click',removePhoto);
+  $('guide-clear').addEventListener('click',()=>{
+    $('guide-log').replaceChildren();checks.protect.clear();checks.yard.clear();
+    showChecklist(null);removePhoto();message('Cleared. Choose a topic or ask a question.','bot');
+  });
+  window.addEventListener('mosquito-context',event=>{
+    context=event.detail;
+    $('guide-context').textContent='Map context ready · '+(Object.values(context.sources).every(Boolean)?'live-source inputs':'includes sample inputs');
+  });
+  message('Choose a topic or type a question. These are prepared educational answers, not medical diagnosis or AI-generated advice.','bot');
+})();
+</script><script type="text/plain" id="map-code">/**
+ * Configuration, fallback data, and high-density analysis grid.
+ */
+
+// Gainesville / Alachua County bounding box: [south, west, north, east].
+const COUNTY_BBOX = { south: 29.45, west: -82.65, north: 29.90, east: -82.05 };
+const COUNTY_CENTER = [29.66, -82.35];
+
+// Map bounds constraint: locked focus on Alachua County
+const MAP_BOUNDS = L.latLngBounds(
+  L.latLng(29.35, -82.75),
+  L.latLng(30.00, -81.95)
+);
+
+// GLOBE Observer Florida feature layer (UF GeoPlan / GeoDI).
+const GLOBE_QUERY_URL = "https://callisto.at.geoplan.ufl.edu/arcgis/rest/services/fgdl/GLOBE_MHM/MapServer/0/query";
+
+// Open-Meteo weather API.
+const WEATHER_BASE_URL = "https://api.open-meteo.com/v1/forecast";
+
+// OpenStreetMap Overpass API for ponds/lakes.
+const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+
+// High-density grid (75x75 = 5,625 nodes) for smooth surface coverage without tile clipping
+const GRID_SIZE = 75;
+
+// Mosquito emergence lag weights
+const RAIN_DAY_WEIGHTS = [1.4, 1.3, 1.1, 0.8, 0.5, 0.3, 0.2];
+
+// Subscore weights
+const RISK_WEIGHTS = { rain: 1.2, temp: 0.8, water: 1.0, report: 1.6 };
+
+// Distance thresholds in kilometers
+const WATER_INFLUENCE_KM = 3.0;
+const REPORT_INFLUENCE_KM = 2.5;
+
+/* ---------------- Fallback Data ---------------- */
+
+const FALLBACK_SITES = [
+  { name: "Duckpond area",      lat: 29.6580, lng: -82.3197, date: "2026-09-12", larvaeCount: 1, waterSource: "Container", eliminated: false },
+  { name: "Springhill area",    lat: 29.6115, lng: -82.3660, date: "2026-09-15", larvaeCount: 1, waterSource: "Drainage", eliminated: false },
+  { name: "Kanapaha area",      lat: 29.6135, lng: -82.4030, date: "2026-09-10", larvaeCount: 0, waterSource: "Tire",     eliminated: true  },
+];
+
+const FALLBACK_WATER_BODIES = [
+  { name: "Lake Alice",              lat: 29.6395, lng: -82.3660, weight: 0.6 },
+  { name: "Bivens Arm Lake",         lat: 29.6215, lng: -82.3400, weight: 0.7 },
+  { name: "Lake Kanapaha",           lat: 29.6089, lng: -82.4234, weight: 0.6 },
+  { name: "Newnans Lake",            lat: 29.6470, lng: -82.2350, weight: 0.5 },
+  { name: "Lake Wauburg",            lat: 29.5810, lng: -82.3540, weight: 0.5 },
+  { name: "Sweetwater Wetlands Park",lat: 29.6117, lng: -82.3010, weight: 1.2 },
+  { name: "Loblolly Woods Pond",     lat: 29.6800, lng: -82.3450, weight: 1.0 },
+  { name: "Possum Creek Park Pond",  lat: 29.6890, lng: -82.3800, weight: 1.0 },
+];
+
+const FALLBACK_RAIN7 = [0.05, 0.1, 0.4, 0.6, 0.2, 0.5, 0.3];
+const FALLBACK_TEMP7 = [78, 80, 82, 81, 79, 83, 84];
+
+const RAIN_DAY_LABELS_7 = ['7d ago', '6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday'];
+
+/* ---------------- Grid Generation & Distance Functions ---------------- */
+
+function buildGrid() {
+  const points = [];
+  const latStep = (COUNTY_BBOX.north - COUNTY_BBOX.south) / (GRID_SIZE - 1);
+  const lngStep = (COUNTY_BBOX.east - COUNTY_BBOX.west) / (GRID_SIZE - 1);
+  for (let i = 0; i < GRID_SIZE; i++) {
+    for (let j = 0; j < GRID_SIZE; j++) {
+      points.push({
+        lat: COUNTY_BBOX.south + i * latStep,
+        lng: COUNTY_BBOX.west + j * lngStep,
+      });
+    }
+  }
+  return points;
+}
+
+function distanceKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Relative mosquito-density potential, not mosquitoes per unit area.
+ * All numerical parameters below are heuristic and need local trap calibration.
+ * Seven completed days are ordered oldest first. Weather is county-center data.
+ */
+const DENSITY_MODEL = Object.freeze({
+  rainScaleInches: 0.8,
+  temperatureCenterF: 81,
+  temperatureWidthF: 12,
+  waterDistanceKm: 1.2,
+  reportDistanceKm: 0.8,
+  reportHalfLifeDays: 14
+});
+const RISK_GRADIENT = {
+  0.00: '#16803a', 0.20: '#55b947', 0.40: '#cddd3a',
+  0.60: '#ffd43b', 0.80: '#ff7a28', 1.00: '#d7191c'
+};
+
+const clamp01 = value => Math.max(0, Math.min(1, value));
+
+function rainfallSubscore(days) {
+  // Earlier rainfall has more time to contribute to emergence.
+  // Saturation avoids assuming arbitrarily large rain means unlimited mosquitoes.
+  const rain = days.slice(0, 7).map(v => Number.isFinite(v) ? Math.max(0, v) : 0);
+  const lagWeights = [1, 1, 0.95, 0.85, 0.7, 0.5, 0.3];
+  const weighted = rain.reduce((sum, value, i) => sum + value * lagWeights[i], 0);
+  // Smooth wet-day persistence proxy; avoids a hard wet/dry threshold.
+  const persistence = rain.reduce((sum, value) => sum + 1 - Math.exp(-value / 0.1), 0) / 7;
+  return clamp01((1 - Math.exp(-weighted / DENSITY_MODEL.rainScaleInches)) *
+    (0.8 + 0.2 * persistence));
+}
+
+function temperatureSubscore(days) {
+  const valid = days.filter(Number.isFinite);
+  if (!valid.length) return 0;
+  // Average daily suitability rather than hiding hot/cold days in a weekly mean.
+  return valid.reduce((sum, temp) => sum + Math.exp(-0.5 *
+    ((temp - DENSITY_MODEL.temperatureCenterF) / DENSITY_MODEL.temperatureWidthF) ** 2), 0) / valid.length;
+}
+
+function waterProximitySubscore(lat, lng, bodies) {
+  if (!bodies.length) return 0;
+  let influence = 0;
+  bodies.forEach(body => {
+    const distance = distanceKm(lat, lng, body.lat, body.lng);
+    // Maximum nearby habitat influence prevents duplicate OSM features
+    // from accumulating artificial density. Distance is to mapped centers.
+    const suitability = clamp01((Number.isFinite(body.weight) ? body.weight : 0.8) / 1.3);
+    influence = Math.max(influence, suitability *
+      Math.exp(-0.5 * (distance / DENSITY_MODEL.waterDistanceKm) ** 2));
+  });
+  return clamp01(influence);
+}
+
+function reportSubscore(lat, lng, reports, now = Date.now()) {
+  let influence = 0;
+  reports.forEach(report => {
+    if (!(report.larvaeCount > 0) || report.eliminated) return;
+    const timestamp = typeof report.date === 'number' ? report.date : Date.parse(report.date);
+    // Undated/future evidence cannot establish current conditions.
+    if (!Number.isFinite(timestamp) || timestamp > now) return;
+    const ageDays = (now - timestamp) / 86400000;
+    const distance = distanceKm(lat, lng, report.lat, report.lng);
+    // Counts lack standardized sampling effort, so use positive presence only.
+    const evidence = Math.pow(0.5, ageDays / DENSITY_MODEL.reportHalfLifeDays);
+    influence = Math.max(influence, evidence *
+      Math.exp(-0.5 * (distance / DENSITY_MODEL.reportDistanceKm) ** 2));
+  });
+  return clamp01(influence);
+}
+
+function continuousScore(rain, temp, water, report) {
+  // Warmth modulates habitat productivity; it cannot create habitat by itself.
+  const habitat = clamp01(0.05 + 0.35 * rain + 0.35 * water + 0.25 * rain * water);
+  const environmental = clamp01(temp) * habitat;
+  // Recent local larvae evidence adds bounded support, not a population count.
+  return 100 * clamp01(environmental + 0.25 * report * (1 - environmental));
+}
+
+function computeGridRisk(grid, weather, waterBodies, reports) {
+  return grid.map((point, index) => {
+    const rainScore = rainfallSubscore(weather.rain[index] || FALLBACK_RAIN7);
+    const tempScore = temperatureSubscore(weather.temp[index] || FALLBACK_TEMP7);
+    const waterScore = waterProximitySubscore(point.lat, point.lng, waterBodies);
+    const reportScore = reportSubscore(point.lat, point.lng, reports);
+    const risk = continuousScore(rainScore, tempScore, waterScore, reportScore);
+    return { ...point, risk, rawScore: risk, rainScore, tempScore, waterScore, reportScore,
+      tier: risk >= 70 ? 'high' : risk >= 35 ? 'medium' : 'low' };
+  });
+}
+
+function nearestGridIndex(lat, lng) {
+  const row = Math.round(clamp01((lat - COUNTY_BBOX.south) / (COUNTY_BBOX.north - COUNTY_BBOX.south)) * (GRID_SIZE - 1));
+  const col = Math.round(clamp01((lng - COUNTY_BBOX.west) / (COUNTY_BBOX.east - COUNTY_BBOX.west)) * (GRID_SIZE - 1));
+  return row * GRID_SIZE + col;
+}
+
+function interpolateGridRisk(lat, lng, values) {
+  const rowPos = clamp01((lat - COUNTY_BBOX.south) / (COUNTY_BBOX.north - COUNTY_BBOX.south)) * (GRID_SIZE - 1);
+  const colPos = clamp01((lng - COUNTY_BBOX.west) / (COUNTY_BBOX.east - COUNTY_BBOX.west)) * (GRID_SIZE - 1);
+  const r0 = Math.floor(rowPos), c0 = Math.floor(colPos);
+  const r1 = Math.min(r0 + 1, GRID_SIZE - 1), c1 = Math.min(c0 + 1, GRID_SIZE - 1);
+  const fr = rowPos - r0, fc = colPos - c0;
+  const at = (r, c) => values[r * GRID_SIZE + c].risk;
+  return at(r0,c0)*(1-fr)*(1-fc) + at(r1,c0)*fr*(1-fc) + at(r0,c1)*(1-fr)*fc + at(r1,c1)*fr*fc;
+}
+
+function citywideDailyAverage(rows) {
+  return Array.from({length: 7}, (_, day) => rows.reduce((sum, row) => sum + (row[day] || 0), 0) / Math.max(rows.length, 1));
+}
+function tierColor(tier) { return tier === 'high' ? '#d7191c' : tier === 'medium' ? '#e59b16' : '#16803a'; }
+function tierBg(tier) { return tier === 'high' ? '#fee2e2' : tier === 'medium' ? '#fef3c7' : '#dcfce7'; }
+function tierLabel(tier) { return tier === 'high' ? 'Higher density potential' : tier === 'medium' ? 'Moderate density potential' : 'Lower density potential'; }
+
+/**
+ * Live data fetching API handlers.
+ */
+
+function withTimeout(promise, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return { promise: promise(controller.signal), clear: () => clearTimeout(timer) };
+}
+
+/* ---------------- GLOBE Observer Reports ---------------- */
+
+async function fetchGlobeSites() {
+  const params = new URLSearchParams({
+    where: "1=1",
+    outFields: "*",
+    geometry: `${COUNTY_BBOX.west},${COUNTY_BBOX.south},${COUNTY_BBOX.east},${COUNTY_BBOX.north}`,
+    geometryType: "esriGeometryEnvelope",
+    inSR: "4326",
+    spatialRel: "esriSpatialRelIntersects",
+    outSR: "4326",
+    f: "geojson",
+  });
+
+  try {
+    const { promise, clear } = withTimeout(
+      (signal) => fetch(`${GLOBE_QUERY_URL}?${params.toString()}`, { signal }),
+      9000
+    );
+    const res = await promise;
+    clear();
+    if (!res.ok) throw new Error("GLOBE query failed: " + res.status);
+    const geojson = await res.json();
+
+    const sites = (geojson.features || []).map((f, i) => {
+      const p = f.properties || {};
+      const [lng, lat] = f.geometry.coordinates;
+      return {
+        name: p.SITENAME || p.WATERSOURCETYPE || `Report ${i + 1}`,
+        lat, lng,
+        date: p.MEASUREDAT || null,
+        larvaeCount: parseInt(p.LARVAECOUNT, 10) || 0,
+        waterSource: p.WATERSOURCETYPE || "Unknown",
+        eliminated: (p.BREEDINGGROUNDELIMINATED || "").toLowerCase() === "true",
+      };
+    }).filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng));
+
+    return { data: sites, live: true };
+  } catch (err) {
+    console.warn("GLOBE Observer fetch failed, using fallback sites:", err);
+    return { data: FALLBACK_SITES, live: false };
+  }
+}
+
+/* ---------------- Weather (Rainfall & Temp via Open-Meteo) ---------------- */
+
+async function fetchWeatherGrid(points) {
+  // Weather varies much more slowly than the risk display grid. One county-center
+  // request is reliable and avoids an oversized URL containing 5,625 coordinates.
+  const lat = COUNTY_CENTER[0].toFixed(4);
+  const lng = COUNTY_CENTER[1].toFixed(4);
+  const params = new URLSearchParams({
+    latitude: lat,
+    longitude: lng,
+    daily: "precipitation_sum,temperature_2m_mean",
+    past_days: "7",
+    forecast_days: "0",
+    precipitation_unit: "inch",
+    temperature_unit: "fahrenheit",
+    timezone: "America/New_York",
+  });
+
+  try {
+    const { promise, clear } = withTimeout(
+      (signal) => fetch(`${WEATHER_BASE_URL}?${params.toString()}`, { signal }),
+      9000
+    );
+    const res = await promise;
+    clear();
+    if (!res.ok) throw new Error("Weather query failed: " + res.status);
+    const json = await res.json();
+
+    const result = Array.isArray(json) ? json[0] : json;
+    const rainVals = ((result.daily && result.daily.precipitation_sum) || FALLBACK_RAIN7).slice(0, 7);
+    const tempVals = ((result.daily && result.daily.temperature_2m_mean) || FALLBACK_TEMP7).slice(0, 7);
+    if (!result.daily || !Array.isArray(result.daily.precipitation_sum) ||
+        !Array.isArray(result.daily.temperature_2m_mean) ||
+        rainVals.length !== 7 || tempVals.length !== 7 ||
+        !rainVals.every(Number.isFinite) || !tempVals.every(Number.isFinite)) {
+      throw new Error('Incomplete seven-day weather response');
+    }
+    const rainPerPoint = points.map(() => rainVals);
+    const tempPerPoint = points.map(() => tempVals);
+
+    return { 
+      data: { rain: rainPerPoint, temp: tempPerPoint }, 
+      live: true, 
+      asOf: new Date().toISOString() 
+    };
+  } catch (err) {
+    console.warn("Open-Meteo fetch failed, using fallback weather:", err);
+    return { 
+      data: { 
+        rain: points.map(() => FALLBACK_RAIN7), 
+        temp: points.map(() => FALLBACK_TEMP7) 
+      }, 
+      live: false, 
+      asOf: null 
+    };
+  }
+}
+
+/* ---------------- Ponds, Lakes & Basins (Overpass API) ---------------- */
+
+async function fetchWaterBodies() {
+  const bbox = `${COUNTY_BBOX.south},${COUNTY_BBOX.west},${COUNTY_BBOX.north},${COUNTY_BBOX.east}`;
+  const query = `
+    [out:json][timeout:20];
+    (
+      way["natural"="water"](${bbox});
+      relation["natural"="water"](${bbox});
+      way["water"="pond"](${bbox});
+      way["landuse"="reservoir"](${bbox});
+      way["landuse"="basin"](${bbox});
+      way["natural"="wetland"](${bbox});
+    );
+    out center tags 60;
+  `;
+
+  try {
+    const { promise, clear } = withTimeout(
+      (signal) => fetch(OVERPASS_URL, {
+        method: "POST",
+        body: "data=" + encodeURIComponent(query),
+        signal,
+      }),
+      12000
+    );
+    const res = await promise;
+    clear();
+    if (!res.ok) throw new Error("Overpass query failed: " + res.status);
+    const json = await res.json();
+
+    const bodies = (json.elements || [])
+      .map(el => {
+        const center = el.center || { lat: el.lat, lon: el.lon };
+        if (!center || !Number.isFinite(center.lat)) return null;
+        
+        const tags = el.tags || {};
+        let weight = 0.8; 
+        if (tags.water === 'pond' || tags.landuse === 'basin' || tags.natural === 'wetland') {
+          weight = 1.3;
+        } else if (tags.natural === 'water' && !tags.water) {
+          weight = 0.6;
+        }
+
+        return {
+          name: tags.name || "Unnamed pond/basin",
+          lat: center.lat,
+          lng: center.lon,
+          weight: weight
+        };
+      })
+      .filter(Boolean);
+
+    if (bodies.length === 0) throw new Error("Overpass returned no water bodies");
+    return { data: bodies, live: true };
+  } catch (err) {
+    console.warn("Overpass fetch failed, using fallback water bodies:", err);
+    return { data: FALLBACK_WATER_BODIES, live: false };
+  }
+}
+
+(async function init() {
+
+  /* ---------------- Step 1: Base Map Setup ---------------- */
+  const map = L.map('map', {
+    zoomControl: true,
+    attributionControl: true,
+    minZoom: 10,
+    maxZoom: 16,
+    maxBounds: MAP_BOUNDS,
+    maxBoundsViscosity: 0.9
+  }).setView(COUNTY_CENTER, 11);
+
+  const baseLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16,
+    attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const grid = buildGrid();
+
+  /* Draw sample data synchronously; live requests never gate the map. */
+  const sources = [
+    { data: FALLBACK_SITES, live: false },
+    { data: {rain: grid.map(() => FALLBACK_RAIN7), temp: grid.map(() => FALLBACK_TEMP7)}, live: false },
+    { data: FALLBACK_WATER_BODIES, live: false }
+  ];
+  render(...sources);
+  const requests = [fetchGlobeSites, () => fetchWeatherGrid(grid), fetchWaterBodies];
+  requests.forEach((request, index) => {
+    // This bounds the entire operation, including response.json(), even if
+    // a network implementation fails to honor AbortController.
+    let timeout;
+    Promise.race([
+      Promise.resolve().then(request),
+      new Promise(resolve => { timeout = setTimeout(() => resolve(sources[index]), 15000); })
+    ]).then(result => {
+      if (result && result.live) {
+        sources[index] = result;
+        render(...sources);
+      }
+    }).catch(error => console.warn('Keeping sample data:', error))
+      .finally(() => clearTimeout(timeout));
+  });
+
+  function render(globeRes, weatherRes, waterRes) {
+  map.closePopup();
+  map.off('click');
+  map.eachLayer(layer => { if (layer !== baseLayer) map.removeLayer(layer); });
+
+  const loadingEl = document.getElementById('loading');
+  if (loadingEl) loadingEl.style.display = 'none';
+
+  /* ---------------- Step 3: Status Badges ---------------- */
+  updateStatusBadge('status-globe', 'GLOBE Observer', globeRes.live);
+  updateStatusBadge('status-rain', 'Open-Meteo Weather', weatherRes.live);
+  updateStatusBadge('status-water', 'OSM Water Bodies', waterRes.live);
+
+  function updateStatusBadge(elementId, label, isLive) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const badgeClass = isLive ? 'src-live' : 'src-fallback';
+    const badgeText = isLive ? 'LIVE' : 'FALLBACK';
+    el.innerHTML = `<span class="src-badge ${badgeClass}">${badgeText}</span> ${label}`;
+  }
+
+  /* ---------------- Step 4: Calculate Base Risk Scores ---------------- */
+  const gridRisk = computeGridRisk(grid, weatherRes.data, waterRes.data, globeRes.data);
+  function publishContext(lat, lng) {
+    const index = nearestGridIndex(lat, lng);
+    window.dispatchEvent(new CustomEvent('mosquito-context', {detail: {
+      lat, lng, score: interpolateGridRisk(lat, lng, gridRisk),
+      rain: (weatherRes.data.rain[index] || FALLBACK_RAIN7).reduce((a,b) => a+b, 0),
+      sources: {weather: weatherRes.live, water: waterRes.live, reports: globeRes.live},
+      updated: new Date().toISOString()
+    }}));
+  }
+  publishContext(COUNTY_CENTER[0], COUNTY_CENTER[1]);
+  const dailyAvgRain = citywideDailyAverage(weatherRes.data.rain);
+  const rain7dTotal = dailyAvgRain.reduce((a, b) => a + b, 0);
+
+  /* ---------------- Step 5: Stable, continuous heatmap surface ---------------- */
+  // Each pixel samples the same geographic scalar field as the click popup.
+  // No additive dots, zoom-dependent weights, or viewport normalization.
+  const stops = Object.entries(RISK_GRADIENT)
+    .map(([position, hex]) => ({
+      position: Number(position),
+      rgb: [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16))
+    })).sort((a, b) => a.position - b.position);
+  function riskRGB(score) {
+    const t = clamp01(score / 100);
+    const upper = stops.findIndex(stop => stop.position >= t);
+    const hi = stops[Math.max(0, upper)];
+    const lo = stops[Math.max(0, upper - 1)];
+    const fraction = hi === lo ? 0 : (t - lo.position) / (hi.position - lo.position);
+    return lo.rgb.map((v, i) => Math.round(v + (hi.rgb[i] - v) * fraction));
+  }
+  const Surface = L.GridLayer.extend({
+    createTile: function(coords) {
+      const tile = document.createElement('canvas');
+      const size = this.getTileSize();
+      tile.width = size.x;
+      tile.height = size.y;
+      const context = tile.getContext('2d');
+      const pixels = context.createImageData(size.x, size.y);
+      // Mercator longitude depends only on x; latitude depends only on y.
+      const lngs = Array.from({length: size.x}, (_, x) =>
+        map.unproject(L.point(coords.x * size.x + x + 0.5, 0), coords.z).lng);
+      for (let y = 0; y < size.y; y++) {
+        const lat = map.unproject(L.point(0, coords.y * size.y + y + 0.5), coords.z).lat;
+        if (lat < COUNTY_BBOX.south || lat > COUNTY_BBOX.north) continue;
+        for (let x = 0; x < size.x; x++) {
+          const lng = lngs[x];
+          if (lng < COUNTY_BBOX.west || lng > COUNTY_BBOX.east) continue;
+          const rgb = riskRGB(interpolateGridRisk(lat, lng, gridRisk));
+          const offset = (y * size.x + x) * 4;
+          pixels.data[offset] = rgb[0];
+          pixels.data[offset + 1] = rgb[1];
+          pixels.data[offset + 2] = rgb[2];
+          pixels.data[offset + 3] = 255;
+        }
+      }
+      context.putImageData(pixels, 0, 0);
+      return tile;
+    }
+  });
+  if (!map.getPane('riskSurface')) map.createPane('riskSurface');
+  map.getPane('riskSurface').style.zIndex = 350;
+  map.getPane('riskSurface').style.pointerEvents = 'none';
+  new Surface({
+    pane: 'riskSurface', opacity: 0.58, tileSize: 256,
+    minZoom: 10, maxZoom: 16, noWrap: true,
+    bounds: [[COUNTY_BBOX.south, COUNTY_BBOX.west], [COUNTY_BBOX.north, COUNTY_BBOX.east]]
+  }).addTo(map);
+
+  /* ---------------- Step 6: Interactive Point Assessment ---------------- */
+  let clickMarker = null;
+
+  map.on('click', (e) => {
+    const { lat, lng } = e.latlng;
+    if (lat < COUNTY_BBOX.south || lat > COUNTY_BBOX.north ||
+        lng < COUNTY_BBOX.west || lng > COUNTY_BBOX.east) {
+      L.popup().setLatLng(e.latlng).setContent('Outside the modeled area.').openOn(map);
+      return;
+    }
+
+    const nearestIdx = nearestGridIndex(lat, lng);
+    publishContext(lat, lng);
+
+    const rainData = weatherRes.data.rain[nearestIdx] || FALLBACK_RAIN7;
+    const tempData = weatherRes.data.temp[nearestIdx] || FALLBACK_TEMP7;
+    
+    const rainScore = rainfallSubscore(rainData);
+    const tempScore = temperatureSubscore(tempData);
+    const waterScore = waterProximitySubscore(lat, lng, waterRes.data);
+    const reportScore = reportSubscore(lat, lng, globeRes.data);
+
+    // Bilinear interpolation avoids snapping the assessment to the nearest cell.
+    const risk = interpolateGridRisk(lat, lng, gridRisk);
+    const intensity = risk / 100;
+    const tier = intensity >= 0.70 ? 'high' : intensity >= 0.35 ? 'medium' : 'low';
+
+    const local7dRain = rainData.reduce((a, b) => a + b, 0);
+    const avgTempF = Math.round(tempData.reduce((a, b) => a + b, 0) / tempData.length);
+
+    if (clickMarker) map.removeLayer(clickMarker);
+
+    clickMarker = L.popup()
+      .setLatLng([lat, lng])
+      .setContent(`
+        <div class="popup">
+          <div class="pop-title">Relative Mosquito Density</div>
+          <div class="pop-tier" style="background:${tierBg(tier)};color:${tierColor(tier)}">${tierLabel(tier)}</div>
+          <div class="pop-row"><b>Density potential index:</b> ${risk.toFixed(1)} / 100</div>
+          <div class="pop-row">Experimental estimate; not a mosquito count.</div>
+          <div class="pop-row"><b>Coordinates:</b> ${lat.toFixed(4)}, ${lng.toFixed(4)}</div>
+          <div class="pop-row"><b>7-Day Rainfall:</b> ${local7dRain.toFixed(2)}"</div>
+          <div class="pop-row"><b>Avg Temp:</b> ${avgTempF}°F</div>
+          <div class="pop-row"><b>Water Body Risk Factor:</b> ${(waterScore * 100).toFixed(0)}%</div>
+        </div>
+      `)
+      .openOn(map);
+  });
+
+  /* ---------------- Step 7: Map Markers ---------------- */
+  waterRes.data.forEach(w => {
+    L.circleMarker([w.lat, w.lng], {
+      radius: 4,
+      color: '#2D7D9A',
+      weight: 1,
+      fillColor: '#DDEEF3',
+      fillOpacity: 0.85
+    }).bindPopup(`<b>${w.name}</b><br>Standing water feature`).addTo(map);
+  });
+
+  const markers = {};
+  globeRes.data.forEach(site => {
+    let nearestIdx = 0, minDist = Infinity;
+    grid.forEach((pt, i) => {
+      const d = distanceKm(site.lat, site.lng, pt.lat, pt.lng);
+      if (d < minDist) { minDist = d; nearestIdx = i; }
+    });
+    const siteRisk = gridRisk[nearestIdx];
+
+    const marker = L.circleMarker([site.lat, site.lng], {
+      radius: 6,
+      color: '#ffffff',
+      weight: 1.5,
+      fillColor: tierColor(siteRisk.tier),
+      fillOpacity: 0.95,
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <div class="popup">
+        <div class="pop-title">${site.name}</div>
+        <div class="pop-tier" style="background:${tierBg(siteRisk.tier)};color:${tierColor(siteRisk.tier)}">${tierLabel(siteRisk.tier)}</div>
+        <div class="pop-row">${site.larvaeCount > 0 ? `Confirmed larvae (${site.larvaeCount})` : 'No larvae recorded'}</div>
+        <div class="pop-row"><b>Water Source:</b> ${site.waterSource}</div>
+      </div>
+    `);
+    markers[site.name] = marker;
+  });
+
+  /* ---------------- Step 8: Sidebar Summary Metrics ---------------- */
+  document.getElementById('stat-sites').textContent = globeRes.data.length;
+  document.getElementById('stat-hot').textContent = gridRisk.filter(s => s.tier === 'high').length;
+  document.getElementById('stat-rain').textContent = rain7dTotal.toFixed(1) + '"';
+
+  (function renderRainChart() {
+    const chart = document.getElementById('rain-chart');
+    const labels = document.getElementById('rain-labels');
+    if (!chart || !labels) return;
+    chart.innerHTML = '';
+    labels.innerHTML = '';
+
+    const max = Math.max(...dailyAvgRain, 0.3);
+    dailyAvgRain.forEach((v, i) => {
+      const col = document.createElement('div');
+      col.className = 'rain-bar-col';
+      const bar = document.createElement('div');
+      bar.className = 'rain-bar';
+      bar.style.height = Math.max(3, Math.round((v / max) * 56)) + 'px';
+      col.appendChild(bar);
+      chart.appendChild(col);
+
+      const lab = document.createElement('span');
+      lab.textContent = RAIN_DAY_LABELS_7[i];
+      labels.appendChild(lab);
+    });
+  })();
+
+  (function renderSiteList() {
+    const list = document.getElementById('site-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    globeRes.data.forEach(site => {
+      const btn = document.createElement('button');
+      btn.className = 'site-item';
+      btn.innerHTML = `
+        <span class="site-dot" style="background:${site.larvaeCount > 0 ? '#EF4444' : '#10B981'}"></span>
+        <span class="site-info">
+          <div class="site-name">${site.name}</div>
+          <div class="site-meta">${site.waterSource} · ${site.larvaeCount} larvae</div>
+        </span> 
+      `;
+      btn.addEventListener('click', () => {
+        map.flyTo([site.lat, site.lng], 14, { duration: 0.6 });
+        if (markers[site.name]) markers[site.name].openPopup();
+      });
+      list.appendChild(btn);
+    });
+  })();
+
+  }
+})().catch(error => {
+  const message = document.getElementById('loading');
+  if (message) {
+    message.style.display = 'block';
+    message.textContent = 'Map could not start: ' + error.message;
+  }
+  console.error(error);
+});
+</script><script>(async function start() {
+  const status = document.getElementById('loading');
+  function showError(message) {
+    status.style.display = 'block';
+    status.style.maxWidth = '90%';
+    status.textContent = message;
+  }
+  window.addEventListener('error', event => {
+    if (event.message) showError('Map error: ' + event.message);
+  });
+  window.addEventListener('unhandledrejection', event =>
+    showError('Map error: ' + (event.reason?.message || event.reason)));
+  async function load(url) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        script.remove();
+        reject(new Error('Map library request timed out'));
+      }, 7000);
+      script.src = url;
+      script.onload = () => { clearTimeout(timer); resolve(); };
+      script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error('Map library unavailable')); };
+      document.head.appendChild(script);
+    });
+  }
+  for (const host of [
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+  ]) {
+    try { await load(host); if (window.L) break; } catch (error) { console.warn(error); }
+  }
+  if (!window.L) {
+    showError('The map library could not download. Open this downloaded HTML in Chrome or Edge with an internet connection, then reload.');
+    return;
+  }
+  const code = document.createElement('script');
+  code.textContent = document.getElementById('map-code').textContent;
+  document.body.appendChild(code);
+})().catch(error => {
+  document.getElementById('loading').textContent = 'Map startup failed: ' + error.message;
+});
+</script></body>
+</html>
